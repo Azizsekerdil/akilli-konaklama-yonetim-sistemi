@@ -18,7 +18,7 @@ httpx>=0.27,<1.0
 python-multipart>=0.0.17
 
 # --- Masaustu arayuz ---
-PySide6>=6.8,<6.10
+PySide6>=6.8,<6.12
 
 # --- Guvenlik ---
 argon2-cffi>=23.1
@@ -36,7 +36,7 @@ structlog>=24.4
 
 # --- Yapay zeka yardimcilari ---
 numpy>=1.26,<3.0
-tiktoken>=0.8; python_version < '3.13'
+tiktoken>=0.13.0; python_version < '3.13'
 
 # --- PostgreSQL kullanacaksaniz asagidaki satiri acin ---
 # psycopg[binary]>=3.2
