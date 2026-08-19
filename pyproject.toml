@@ -1,0 +1,264 @@
+[build-system]
+# setuptools>=83: yayin oncesi bagimlilik taramasinda (pip-audit) 65.x/69.x/78.x
+# serilerine karsi acik kayitlari goruldu. En yenisi PYSEC-2026-3447 sdist
+# uretimini etkiler ve 83.0.0'da giderilmistir. setuptools bir DERLEME araci
+# oldugu icin calisma zamani bagimliligi degildir; yine de derleme ortamini
+# bilerek eski birakmanin gerekcesi yoktur.
+requires = ["setuptools>=83", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "akilli-konaklama-yonetim-sistemi"
+version = "0.1.0"
+description = "Akilli Konaklama Yonetim Sistemi - modern, modüler, yapay zeka destekli otel/PMS yazilimi"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "Aziz Sekerdil" }]
+keywords = ["hotel", "pms", "otel", "konaklama", "rezervasyon", "property-management", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Turkish",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+]
+
+dependencies = [
+    # --- Cekirdek / veri ---
+    "SQLAlchemy>=2.0.36,<2.1",
+    "alembic>=1.14,<2.0",
+    "pydantic>=2.9,<3.0",
+    "pydantic-settings>=2.6,<3.0",
+    "python-dateutil>=2.9",
+
+    # --- Servis katmani ---
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.32,<1.0",
+    "httpx>=0.27,<1.0",
+    "python-multipart>=0.0.17",
+
+    # --- Masaustu arayuz ---
+    "PySide6>=6.8,<6.10",
+
+    # --- Guvenlik ---
+    "argon2-cffi>=23.1",
+    "cryptography>=43",  # kimlik/pasaport alanlarinin sifrelenmesi icin
+    "keyring>=25.5",
+    "python-dotenv>=1.0",
+    "slowapi>=0.1.9",
+
+    # --- Raporlama / disa aktarma ---
+    "reportlab>=4.2",
+    "openpyxl>=3.1",
+
+    # --- Loglama ---
+    "structlog>=24.4",
+
+    # --- Yapay zeka yardimcilari ---
+    "numpy>=1.26,<3.0",
+    "tiktoken>=0.8; python_version < '3.13'",
+]
+
+[project.optional-dependencies]
+postgres = [
+    "psycopg[binary]>=3.2",
+]
+dev = [
+    # --- Test ---
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-qt>=4.4",
+    "pytest-asyncio>=0.24",
+    "pytest-mock>=3.14",
+    "freezegun>=1.5",
+    "respx>=0.21",
+
+    # --- Kod kalitesi ---
+    "ruff>=0.8",
+    "black>=24.10",
+    "mypy>=1.13",
+    "types-python-dateutil",
+
+    # --- Guvenlik taramasi ---
+    "bandit[toml]>=1.8",
+    "pip-audit>=2.7",
+    "detect-secrets>=1.5",
+
+    # --- Paketleme ---
+    "pyinstaller>=6.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/Azizsekerdil/akilli-konaklama-yonetim-sistemi"
+Documentation = "https://github.com/Azizsekerdil/akilli-konaklama-yonetim-sistemi/tree/main/docs"
+Issues = "https://github.com/Azizsekerdil/akilli-konaklama-yonetim-sistemi/issues"
+
+[project.scripts]
+hotel = "app.cli:main"
+
+[project.gui-scripts]
+hotel-desktop = "app.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["tests*", "docs*", "scripts*"]
+
+[tool.setuptools.package-data]
+app = ["ui/resources/**/*", "ui/i18n/*.json", "reporting/templates/*"]
+
+# ============================================================
+#  RUFF - linter + import siralama
+# ============================================================
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["alembic/versions", ".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # comprehensions
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "S",    # bandit (guvenlik)
+    "A",    # builtin shadowing
+    "DTZ",  # naive datetime kullanimi
+    "RUF",  # ruff'a ozel
+]
+ignore = [
+    "E501",   # satir uzunlugu -> black hallediyor
+    "B008",   # FastAPI Depends() varsayilan argumani
+    "N818",   # exception adlarinda Error soneki zorunlulugu
+    "RUF001", # Turkce karakterler icin belirsiz-unicode uyarisi
+    "RUF002",
+    "RUF003",
+    # UP042: "str, Enum yerine StrEnum kullan". Bilincli tercih:
+    # SQLAlchemy'nin values_callable'i ve pydantic-settings'in enum
+    # cozumlemesi (str, Enum) kalibiyla uzun suredir uyumlu calisir.
+    # StrEnum'a gecis, enum degerlerinin veritabaninda nasil serilestirildigini
+    # etkileyebilecek bir davranis degisikligidir; kazanci yok, riski var.
+    "UP042",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",   # assert - testlerin temel araci
+    "S105",   # sabit "parola" dizgeleri - hepsi uydurma test verisi
+    "S106",
+    "S311",
+    "S603",   # subprocess - test fikstürleri gercek git deposu kurar
+    "S607",   # kismi yol ("git") - PATH'ten cozulmesi bilincli
+    "DTZ001",
+    "DTZ005",
+    "N817",   # "ReservationStatus as RS" - testleri okunur kilan kisaltma
+]
+"app/infrastructure/seed/**/*.py" = ["S311"]  # demo veri icin random yeterli
+# S607 (kismi calistirilabilir yolu): "git" ve "powershell.exe" bilincli
+# olarak PATH'ten cozulur. Tam yol gomulseydi farkli kurulumlarda (Git for
+# Windows, scoop, winget; PowerShell 5.1 vs 7) uygulama calismazdi.
+# Argumanlar sabit listedir ve shell=False kullanilir.
+"app/devcenter/git_guard.py" = ["S607"]
+"app/devcenter/terminal.py" = ["S607"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ============================================================
+#  BLACK - formatlayici
+# ============================================================
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = "alembic/versions|\\.venv"
+
+# ============================================================
+#  MYPY - tip kontrolu
+# ============================================================
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+ignore_missing_imports = true
+exclude = ["alembic/versions/", "build/", "dist/", "\\.venv/"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "alembic.*"]
+disallow_untyped_defs = false
+check_untyped_defs = false
+
+# ============================================================
+#  PYTEST
+# ============================================================
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "unit: hizli, izole birim testleri",
+    "integration: veritabani/servis entegrasyon testleri",
+    "api: FastAPI endpoint testleri",
+    "ui: PySide6 arayuz smoke testleri (QT_QPA_PLATFORM=offscreen gerekir)",
+    "ai: yapay zeka saglayici testleri (mock)",
+    "live: GERCEK dis servis gerektirir - varsayilan olarak atlanir",
+    "slow: uzun suren testler",
+]
+filterwarnings = [
+    "error::DeprecationWarning:app.*",
+    "ignore::DeprecationWarning",
+]
+asyncio_mode = "auto"
+
+# ============================================================
+#  COVERAGE
+# ============================================================
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/ui/resources/*",
+    "app/main.py",
+    "*/alembic/*",
+    "*/tests/*",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+    "@overload",
+]
+precision = 1
+
+# ============================================================
+#  BANDIT - guvenlik taramasi
+# ============================================================
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "build", "dist", "alembic/versions"]
+# B101 assert_used: testlerde normal
+skips = ["B101"]

@@ -1,0 +1,66 @@
+# Bagimlilik guncelleme botu.
+#
+# Neden haftalik ve gruplu?
+#   Gunluk PR akisi incelenmeden birlestirilmeye baslanir; bu, botu bir
+#   guvenlik araci olmaktan cikarip gurultuye cevirir. Haftalik, gruplanmis
+#   ve sinirli sayida PR daha yuksek olasilikla gercekten okunur.
+version: 2
+
+updates:
+  # ---------------- Python bagimliliklari ----------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    labels:
+      - "bagimlilik"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # Calisma zamani bagimliliklari tek PR'da toplanir.
+      calisma-zamani:
+        patterns: ["*"]
+        exclude-patterns:
+          - "pytest*"
+          - "ruff"
+          - "black"
+          - "mypy"
+          - "bandit*"
+          - "pip-audit"
+          - "detect-secrets"
+          - "pyinstaller"
+          - "types-*"
+          - "freezegun"
+          - "respx"
+      gelistirme-araclari:
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "black"
+          - "mypy"
+          - "bandit*"
+          - "pip-audit"
+          - "detect-secrets"
+          - "pyinstaller"
+          - "types-*"
+          - "freezegun"
+          - "respx"
+
+  # ---------------- GitHub Actions ----------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    labels:
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"

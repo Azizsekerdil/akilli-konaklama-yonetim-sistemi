@@ -1,0 +1,157 @@
+# ============================================================
+#  Akilli Konaklama Yonetim Sistemi - .gitignore
+#  GUVENLIK: Bu dosya gizli bilgi sizintisini onlemenin ilk katmanidir.
+#  Degisiklik yapmadan once docs/SECURITY_REVIEW.md dosyasini okuyun.
+# ============================================================
+
+# ---------- Gizli bilgiler / kimlik dogrulama ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+secrets/
+credentials.json
+client_secret*.json
+*api_key*
+*apikey*
+*_token.txt
+.secrets.baseline.local
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ---------- Sanal ortam ----------
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# ---------- Test / kalite ----------
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+reports/
+bandit-report.json
+pip-audit-report.json
+
+# ---------- Veritabani (GERCEK ISLETME VERISI ASLA DEPOYA GIRMEZ) ----------
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+backups/
+*.bak
+*.dump
+*.sql.gz
+
+# ---------- Loglar ----------
+logs/
+*.log
+*.log.*
+
+# ---------- Yapay zeka model dosyalari (cok buyuk) ----------
+# DIKKAT: bu kural "/models/" olarak agac kokune SABITLENMELIDIR.
+# Sabitlenmemis "models/" kurali her derinlikteki models klasorunu yakalar
+# ve app/infrastructure/db/models/ (60 tabloluk ORM semasinin tamami)
+# sessizce surum kontrolu disinda kalir. Bu hata yalnizca depo baska bir
+# makineye klonlandiginda fark edilir - uygulama hic calismaz.
+/models/
+*.gguf
+*.safetensors
+*.bin
+*.onnx
+*.pt
+*.pth
+*.ckpt
+.chroma/
+vectorstore/
+embeddings_cache/
+
+# ---------- Kullanici yuklemeleri / medya ----------
+uploads/
+media/
+attachments/
+room_photos/
+guest_documents/
+
+# ---------- Paketleme ----------
+*.spec.bak
+installer_output/
+
+# ---------- Tarayici oturumu ----------
+.browser_profile/
+cookies.json
+storage_state.json
+
+# ---------- IDE / editor ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ---------- Windows ----------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---------- Gecici ----------
+tmp/
+temp/
+scratch/
+*.tmp
+
+# Gelistirme sirasinda uretilen ekran goruntuleri (docs/ altindakiler haric)
+/ekran*.png
+/screenshot*.png
+/*.png
+
+# ---------- Sunum uretim ciktilari ----------
+# sunum/sunum_uret.py'nin ciktilari; yayimlanan surumleri
+# docs/presentation/ altinda *_PUBLIC.* adiyla durur.
+/sunum/*.pptx
+/sunum/*.pdf
+/sunum/*.html
+
+# ---------- Olcum ciktilari ----------
+coverage.json
+detect-secrets-report.json

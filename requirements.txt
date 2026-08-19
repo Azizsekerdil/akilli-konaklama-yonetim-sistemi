@@ -1,0 +1,42 @@
+# ============================================================
+#  Akilli Konaklama Yonetim Sistemi - calisma zamani bagimliliklari
+#  Kurulum:  .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+#  Not: Tek dogruluk kaynagi pyproject.toml'dur; bu dosya kolaylik icindir.
+# ============================================================
+
+# --- Cekirdek / veri ---
+SQLAlchemy>=2.0.36,<2.1
+alembic>=1.14,<2.0
+pydantic>=2.9,<3.0
+pydantic-settings>=2.6,<3.0
+python-dateutil>=2.9
+
+# --- Servis katmani ---
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32,<1.0
+httpx>=0.27,<1.0
+python-multipart>=0.0.17
+
+# --- Masaustu arayuz ---
+PySide6>=6.8,<6.10
+
+# --- Guvenlik ---
+argon2-cffi>=23.1
+cryptography>=43
+keyring>=25.5
+python-dotenv>=1.0
+slowapi>=0.1.9
+
+# --- Raporlama / disa aktarma ---
+reportlab>=4.2
+openpyxl>=3.1
+
+# --- Loglama ---
+structlog>=24.4
+
+# --- Yapay zeka yardimcilari ---
+numpy>=1.26,<3.0
+tiktoken>=0.8; python_version < '3.13'
+
+# --- PostgreSQL kullanacaksaniz asagidaki satiri acin ---
+# psycopg[binary]>=3.2

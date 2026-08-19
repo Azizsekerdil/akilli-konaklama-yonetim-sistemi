@@ -1,0 +1,170 @@
+name: CI
+
+# Neden Windows?
+# Uygulama Windows masaustu icin gelistiriliyor: PySide6 arayuzu, keyring
+# (Windows Credential Manager), PowerShell betikleri ve PyInstaller paketi.
+# Linux'ta calisan bir test paketi, hedef platformdaki davranisi dogrulamaz.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# En az yetki: is akislarinin hicbiri depoya yazmaz.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    env:
+      # Testler gercek veritabanina ve anahtar deposuna DOKUNMAZ.
+      HOTEL_APP_ENV: testing
+      HOTEL_DB_URL: "sqlite:///:memory:"
+      HOTEL_LOG_LEVEL: WARNING
+      HOTEL_AI_ENABLED: "false"
+      # PySide6 ekransiz calisir; gorsel testler icin gerekli.
+      QT_QPA_PLATFORM: offscreen
+
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Bagimliliklari kur
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e . --no-deps
+
+      - name: Bicimlendirme denetimi (black)
+        run: black --check app tests
+
+      - name: Lint (ruff)
+        run: ruff check app tests --output-format=github
+
+      - name: Tip kontrolu (mypy)
+        # Tip kontrolu henuz tamamen temiz degil; bilgi amacli calisir.
+        # Bu adimin "continue-on-error" olmasi bilincli ve README'de yazilidir.
+        continue-on-error: true
+        run: mypy app --no-error-summary
+
+      - name: Veritabani gocleri uygulanabiliyor mu
+        env:
+          HOTEL_DB_URL: "sqlite:///ci_test.db"
+        run: |
+          alembic upgrade head
+          alembic check
+
+      - name: Testler
+        run: pytest -q --no-header -m "not live" --cov=app --cov-report=xml --cov-report=term
+
+      - name: Kapsam raporunu yukle
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapsam-raporu
+          path: coverage.xml
+          retention-days: 14
+
+  security:
+    name: Guvenlik taramasi
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bagimliliklari kur
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e . --no-deps
+
+      - name: Statik guvenlik analizi (bandit)
+        run: bandit -q -c pyproject.toml -r app
+
+      - name: Bagimlilik guvenligi (pip-audit)
+        # Bir bagimlilikta acik cikmasi PR'i bloklamamali; gorunur olmali.
+        continue-on-error: true
+        run: pip-audit --skip-editable
+
+      - name: Gizli bilgi taramasi (detect-secrets)
+        # Depoda **hic** bulgu olmamalidir. Onceki surumde bir
+        # ".secrets.baseline" dosyasi tutuluyor ve yeni bulgular ona gore
+        # karsilastiriliyordu; baseline dosyasinin kendisi onlarca ozet
+        # degeri tasidigi icin sir tarayicilarini bosuna tetikliyordu.
+        # Baseline kaldirildi: tarama sifir bulgu bekler. Gercek bir yanlis
+        # pozitif cikarsa ilgili satira "pragma: allowlist secret" yorumu
+        # eklenir - karar kod incelemesinde gorunur olur.
+        shell: pwsh
+        run: |
+          detect-secrets scan --exclude-files "\.venv|\.git/|htmlcov|dist|build|_cache|__pycache__|\.env$" |
+            Out-File -Encoding utf8 detect-secrets-report.json
+          $rapor = Get-Content detect-secrets-report.json -Raw | ConvertFrom-Json
+          $bulgu = $rapor.results.PSObject.Properties.Name
+          if ($bulgu) {
+            Write-Host "HATA: gizli bilgi bulgusu var:" -ForegroundColor Red
+            $bulgu | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "Temiz: gizli bilgi bulgusu yok." -ForegroundColor Green
+
+      - name: Depoda hassas dosya var mi
+        shell: pwsh
+        run: |
+          $sizinti = git ls-files |
+            Select-String -Pattern '(^|/)\.env$|\.db$|\.sqlite3?$|\.pem$|\.key$|^backups/|^logs/|^data/|^prompts/|(^|/)\.claude/'
+          if ($sizinti) {
+            Write-Host "HATA: depoda olmamasi gereken dosyalar var:" -ForegroundColor Red
+            $sizinti | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "Temiz: hassas dosya bulunmadi." -ForegroundColor Green
+
+      - name: Ic belgeler yanlislikla eklenmis mi
+        # Depo kapsami disindaki calisma belgeleri (ana promptlar, ic
+        # bosluk/hazirlik raporlari) yayimlanan agaca girmemelidir.
+        shell: pwsh
+        run: |
+          $yasak = git ls-files |
+            Select-String -Pattern '(^|/)(prompts|patent)/|MASTER-PROMPT|ANA-PROMPT|GAP_REPORT|READINESS'
+          if ($yasak) {
+            Write-Host "HATA: depo kapsami disindaki belgeler bulundu:" -ForegroundColor Red
+            $yasak | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "Temiz: kapsam disi belge yok." -ForegroundColor Green
