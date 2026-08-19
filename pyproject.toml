@@ -43,7 +43,7 @@ dependencies = [
     "python-multipart>=0.0.17",
 
     # --- Masaustu arayuz ---
-    "PySide6>=6.8,<6.10",
+    "PySide6>=6.8,<6.12",
 
     # --- Guvenlik ---
     "argon2-cffi>=23.1",
